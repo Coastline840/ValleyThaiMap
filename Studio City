@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Valley Thai Food Map — Crowdsourced</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root { --ink:#1f2a33; --paper:#f7f4ee; }
+  html,body { margin:0; height:100%; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:var(--ink); }
+  #wrap { display:flex; flex-direction:column; height:100%; }
+  header { background:var(--paper); padding:14px 18px; border-bottom:1px solid #e2dccf; }
+  header h1 { margin:0; font-size:1.15rem; }
+  header p { margin:4px 0 0; font-size:.82rem; color:#5a6670; }
+  #map { flex:1; }
+  .legend { background:#fff; padding:10px 12px; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.25); font-size:.8rem; line-height:1.7; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+  .pop b { font-size:1rem; }
+  .pop .meta { color:#5a6670; font-size:.82rem; margin:3px 0; }
+  .pop .votes { font-weight:700; }
+  .pop a { color:#1565c0; text-decoration:none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Valley Thai Food — Crowdsourced Map</h1>
+    <p>15 Thai spots recommended by the neighborhood. Tap a pin for details.</p>
+  </header>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const spots = [
+  {n:"Grandma's Thai Kitchen", lat:34.1719605, lng:-118.4213562, a:"13230 Burbank Blvd (next to Sharky's)", v:58, r:4.4, h:"Daily 9am–9pm", w:""},
+  {n:"Exotic Thai Cuisine", lat:34.189285, lng:-118.319474, a:"1212 N San Fernando Blvd, Burbank", v:40, r:4.3, h:"Family-owned for years", w:"http://exoticthaiofburbank.com/"},
+  {n:"Saraya Thai Cuisine", lat:34.169476, lng:-118.321529, a:"1439 W Olive Ave, Burbank", v:40, r:4.6, h:"Closed Sun", w:"http://www.sarayaburbank.com/"},
+  {n:"Summer Canteen", lat:34.1520419, lng:-118.3662545, a:"4444 Lankershim Blvd, NoHo", v:36, r:4.5, h:"Riverside & Lankershim", w:"http://www.summercanteen.com/"},
+  {n:"Gindi Thai", lat:34.1520914, lng:-118.3437864, a:"4017 W Riverside Dr, Burbank", v:34, r:4.4, h:"Thai + sushi + bar, live music", w:"http://www.instagram.com/gindithai/"},
+  {n:"Sri Siam Cafe", lat:34.1943596, lng:-118.4132288, a:"12843 Vanowen St, NoHo", v:30, r:4.6, h:"Closed Wed · crispy rice salad", w:"http://www.srisiamcafe.com/"},
+  {n:"Rustic Spoon", lat:34.1501444, lng:-118.3654556, a:"4384 Lankershim Blvd, Toluca Lake", v:21, r:4.5, h:"Came up over and over", w:"http://rusticspoonla.com/"},
+  {n:"Sanamluang Cafe", lat:34.1014317, lng:-118.3029648, a:"5176 Hollywood Blvd, E. Hollywood", v:20, r:4.3, h:"Open till 2am — late-night classic", w:"http://www.sanamluanghollywood.com/"},
+  {n:"Amazing Thai Cuisine", lat:34.1645856, lng:-118.3618903, a:"10604 Magnolia Blvd, NoHo", v:8, r:4.4, h:"Magnolia & Cahuenga · budget", w:"http://www.amazingthaicuisine.com/"},
+  {n:"Khao Soi Thai", lat:34.1440502, lng:-118.3989853, a:"12215 Ventura Blvd, Studio City", v:6, r:4.4, h:"Northern Thai — get the khao soi", w:"http://www.khaosoithai.com/"},
+  {n:"Thai Original BBQ", lat:34.1448005, lng:-118.2480722, a:"143 S Glendale Ave, Glendale", v:3, r:4.0, h:"The OG — order S1/S2", w:"https://thaioriginalbbqgo.site/"},
+  {n:"Magnolia Thai Cuisine", lat:34.164656, lng:-118.3873031, a:"11688 Magnolia Blvd, NoHo", v:0, r:4.8, h:"Closed Mon · 4.8 stars", w:"https://www.magnoliathaicuisineca.com/"},
+  {n:"Thai Victory", lat:34.1865097, lng:-118.3891075, a:"11736 Victory Blvd, NoHo", v:0, r:4.7, h:"Closed Wed · family-owned", w:"http://www.thaivictoryla.com/"},
+  {n:"Holy Basil", lat:34.1171355, lng:-118.261308, a:"3170 Glendale Blvd, Atwater Village", v:0, r:4.3, h:"Closed Mon · rotating menu, wine bar", w:"http://www.holybasil-la.com/"},
+  {n:"Samata Vegan House", lat:34.0972852, lng:-118.3388607, a:"1435 Highland Ave, Hollywood", v:0, r:4.6, h:"All-vegan Thai · Closed Mon", w:"http://www.samataveganhouse.com/"}
+];
+
+const map = L.map('map').setView([34.16, -118.38], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '© OpenStreetMap'
+}).addTo(map);
+
+const bounds = [];
+spots.forEach(s => {
+  bounds.push([s.lat, s.lng]);
+  const m = L.circleMarker([s.lat, s.lng], {
+    radius: 9, fillColor: "#e07b39", color:"#fff", weight:2, fillOpacity:0.92
+  }).addTo(map);
+  const link = `<br><a href="${s.w || 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.n)}" target="_blank" rel="noopener">Website</a> · <a href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank" rel="noopener">Directions</a>`;
+  m.bindPopup(`<div class="pop"><b>${s.n}</b><div class="meta">${s.a}</div><div class="meta">${s.h}</div>${link}</div>`);
+});
+map.fitBounds(bounds, {padding:[40,40]});
+</script>
+</body>
+</html>
